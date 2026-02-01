@@ -15,24 +15,6 @@
 
 Αν έχετε ήδη τρέξει το RabbitMQ πριν, το volume μπορεί να έχει παλιά credentials. Το RabbitMQ χρησιμοποιεί environment variables μόνο κατά την πρώτη αρχικοποίηση.
 
-### Quick Fix (Συνιστάται για 401 errors):
-```bash
-chmod +x fix-rabbitmq-401.sh
-./fix-rabbitmq-401.sh
-```
-
-Αυτό το script θα:
-1. Σταματήσει όλα τα services που εξαρτώνται από RabbitMQ
-2. Διαγράψει το παλιό volume με τα λάθος credentials
-3. Δημιουργήσει νέο volume με τα σωστά credentials
-4. Επαληθεύσει ότι τα credentials λειτουργούν
-
-### Alternative: Reset RabbitMQ only
-```bash
-chmod +x reset-rabbitmq.sh
-./reset-rabbitmq.sh
-```
-
 ```bash
 # Σταματήστε το RabbitMQ
 docker compose -f docker-compose.deploy.yml stop rabbitmq
