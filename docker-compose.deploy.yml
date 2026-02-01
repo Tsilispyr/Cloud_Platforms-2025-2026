@@ -1,0 +1,289 @@
+networks:
+  devops-pets-network:
+    driver: bridge
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: devops-pets-postgres
+    environment:
+      POSTGRES_DB: petdb
+      POSTGRES_USER: petuser
+      POSTGRES_PASSWORD: petpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petuser -d petdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-tb:
+    image: postgres:15
+    container_name: devops-pets-postgres-tb
+    environment:
+      POSTGRES_DB: thingsboard
+      POSTGRES_USER: thingsboard
+      POSTGRES_PASSWORD: thingsboard
+    volumes:
+      - tb-postgres-data:/var/lib/postgresql/data
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U thingsboard -d thingsboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.4
+    container_name: devops-pets-keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/petdb
+      KC_DB_USERNAME: petuser
+      KC_DB_PASSWORD: petpass
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8081
+      # Uncomment the following line if you have a realm-export.json file:
+      # KEYCLOAK_IMPORT: /opt/keycloak/data/import/realm-export.json
+    ports:
+      - "8081:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      # Uncomment the following line if you have a realm-export.json file:
+      # - ./keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json
+    networks:
+      - devops-pets-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  minio:
+    image: minio/minio:latest
+    container_name: devops-pets-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+      # Keycloak / OIDC Configuration
+      MINIO_IDENTITY_OPENID_CONFIG_URL: "http://keycloak:8080/realms/pet-realm/.well-known/openid-configuration"
+      MINIO_IDENTITY_OPENID_CLIENT_ID: "minio-client"
+      MINIO_IDENTITY_OPENID_CLIENT_SECRET: "minio-secret-key"
+      MINIO_IDENTITY_OPENID_CLAIM_NAME: "preferred_username"
+      MINIO_IDENTITY_OPENID_SCOPES: "openid,profile,email"
+      MINIO_IDENTITY_OPENID_DISPLAY_NAME: "Login with Keycloak"
+      MINIO_BROWSER_REDIRECT_URL: "http://localhost:9001"
+      # Ρυθμίσεις RabbitMQ
+      MINIO_NOTIFY_RABBITMQ_ENABLE_primary: "on"
+      MINIO_NOTIFY_RABBITMQ_URL_primary: "amqp://rabbitmq:rabbitmq123@rabbitmq:5672"
+      MINIO_NOTIFY_RABBITMQ_EXCHANGE_primary: "minio-events"
+      MINIO_NOTIFY_RABBITMQ_EXCHANGE_TYPE_primary: "fanout"
+      MINIO_NOTIFY_RABBITMQ_DURABLE_primary: "on"
+      MINIO_NOTIFY_RABBITMQ_DELIVERY_MODE_primary: "2"
+
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: devops-pets-mailhog
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8025"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  backend:
+    build:
+      context: ./Ask
+      dockerfile: Dockerfile
+    container_name: devops-pets-backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      thingsboard:
+        condition: service_started
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/petdb
+      SPRING_DATASOURCE_USERNAME: petuser
+      SPRING_DATASOURCE_PASSWORD: petpass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      # Gmail SMTP Configuration
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_PASS: ${GMAIL_PASS:-}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_BUCKET: pets-images
+      # Archiving Configuration (Matches scripts/setup-keycloak.sh buckets)
+      MINIO_ARCHIVE_BUCKET: pets-images-archive
+      MINIO_ARCHIVE_MONTHS: 6
+      MINIO_ARCHIVE_ENABLED: "true"
+      MINIO_ARCHIVE_NOTIFY_RABBITMQ_ENABLED: "true"
+      # Gmail SMTP Settings
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_AUTH: "true"
+      SPRING_MAIL_STARTTLS: "true"
+      SPRING_MAIL_STARTTLS_REQUIRED: "true"
+      FRONTEND_URL: http://localhost:8083
+      THINGSBOARD_URL: http://thingsboard:8080
+      THINGSBOARD_TOKEN: ${THINGSBOARD_TOKEN:-}
+      # RabbitMQ Configuration
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: rabbitmq
+      SPRING_RABBITMQ_PASSWORD: rabbitmq123
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || curl -f http://localhost:8080/api || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: devops-pets-frontend
+    depends_on:
+      backend:
+        condition: service_started
+    ports:
+      - "8083:80"
+    environment:
+      VITE_API_URL: http://backend:8080
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:80 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: devops-pets-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: rabbitmq
+      RABBITMQ_DEFAULT_PASS: rabbitmq123
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - devops-pets-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  node-red:
+    image: nodered/node-red:latest
+    container_name: devops-pets-node-red
+    ports:
+      - "1880:1880"
+    environment:
+      - TZ=Europe/Athens
+      - NODE_RED_CREDENTIAL_SECRET=devops-pets-secret-key-change-in-production
+    volumes:
+      - node-red-data:/data
+    networks:
+      - devops-pets-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      thingsboard:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:1880"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  thingsboard:
+    image: thingsboard/tb
+    container_name: thingsboard
+    restart: always
+    ports:
+      - "9090:8080"
+      - "1883:1883"
+    environment:
+      - TB_QUEUE_TYPE=rabbitmq
+      - TB_QUEUE_RABBIT_MQ_HOST=rabbitmq
+      - TB_QUEUE_RABBIT_MQ_PORT=5672
+      - TB_QUEUE_RABBIT_MQ_USER_NAME=rabbitmq
+      - TB_QUEUE_RABBIT_MQ_PASSWORD=rabbitmq123
+      - TB_QUEUE_RABBIT_MQ_VIRTUAL_HOST=/
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-tb:5432/thingsboard
+      - SPRING_DATASOURCE_USERNAME=thingsboard
+      - SPRING_DATASOURCE_PASSWORD=thingsboard
+      # Ensure Spring uses PostgreSQL driver/dialect (fix HSQLDB driver error)
+      - SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+      - SPRING_DRIVER_CLASS_NAME=org.postgresql.Driver
+      - SERVER_PORT=8080
+    volumes:
+      - tb-data:/data
+      - tb-logs:/var/log/thingsboard
+    networks:
+      - devops-pets-network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-tb:
+        condition: service_healthy
+
+      
+volumes:
+  db-data:
+    driver: local
+  keycloak_data:
+    driver: local
+  minio-data:
+    driver: local
+    
+
+  tb-data:
+  tb-logs:
+  tb-postgres-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  node-red-data:
+    driver: local
