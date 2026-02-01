@@ -6,22 +6,7 @@
 ## Αιτία
 Το RabbitMQ volume έχει παλιά credentials που δεν ταιριάζουν με τα environment variables. Το RabbitMQ χρησιμοποιεί τα environment variables μόνο κατά την πρώτη αρχικοποίηση.
 
-## Λύση
-
-### Βήμα 1: Τρέξτε το fix script
-
-```bash
-chmod +x fix-rabbitmq-401.sh
-./fix-rabbitmq-401.sh
-```
-
-Αυτό το script θα:
-1. Σταματήσει τα dependent services (thingsboard, node-red, backend)
-2. Διαγράψει το παλιό RabbitMQ volume
-3. Δημιουργήσει νέο volume με τα σωστά credentials
-4. Επαναφέρει τα services
-
-### Βήμα 2: Clear browser cache
+### Βήμα 1: Clear browser cache
 
 Μετά το script, κάντε:
 
@@ -41,7 +26,7 @@ chmod +x fix-rabbitmq-401.sh
    - Firefox: `Ctrl+Shift+P`
    - Chrome/Edge: `Ctrl+Shift+N`
 
-### Βήμα 3: Επαλήθευση
+### Βήμα 2: Επαλήθευση
 
 1. Ανοίξτε http://localhost:15672 σε incognito mode
 2. Χρησιμοποιήστε:
@@ -99,3 +84,4 @@ sleep 15
 # Restart dependent services
 docker compose -f docker-compose.deploy.yml up -d thingsboard node-red backend
 ```
+
