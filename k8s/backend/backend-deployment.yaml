@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: devops-pets
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        - name: copy-jar
+          image: busybox:latest
+          command: ['sh', '-c', 'cp /shared/app.jar /app/app.jar && echo "JAR copied successfully"']
+          volumeMounts:
+            - name: shared-storage
+              mountPath: /shared
+            - name: app-jar
+              mountPath: /app
+      containers:
+        - name: backend
+          image: openjdk:17-jdk-slim
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres.devops-pets.svc.cluster.local:5432/petdb
+            - name: SPRING_DATASOURCE_USERNAME
+              value: petuser
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: petpass
+            - name: SPRING_MAIL_HOST
+              value: smtp.gmail.com
+            - name: SPRING_MAIL_PORT
+              value: "587"
+            - name: GMAIL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gmail-secret
+                  key: GMAIL_USER
+            - name: GMAIL_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: gmail-secret
+                  key: GMAIL_PASS
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+              value: "true"
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+              value: "true"
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_REQUIRED
+              value: "true"
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
+              value: http://localhost:8083/realms/petsystem
+            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_AUDIENCES
+              value: backend
+          command: ["java", "-jar", "/app/app.jar"]
+          volumeMounts:
+            - name: app-jar
+              mountPath: /app
+      volumes:
+        - name: app-jar
+          emptyDir: {}
+        - name: shared-storage
+          persistentVolumeClaim:
+            claimName: shared-storage
