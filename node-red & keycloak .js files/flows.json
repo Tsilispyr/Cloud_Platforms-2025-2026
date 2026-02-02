@@ -1,0 +1,132 @@
+[
+    {
+        "id": "5f594220603dce1c",
+        "type": "tab",
+        "label": "Flow 2",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "1f70e6c6c51d35b4",
+        "type": "http in",
+        "z": "5f594220603dce1c",
+        "name": "",
+        "url": "/minio-webhook",
+        "method": "post",
+        "upload": true,
+        "skipBodyParsing": false,
+        "swaggerDoc": "",
+        "x": 220,
+        "y": 200,
+        "wires": [
+            [
+                "fb79e656a10d6cf1",
+                "4e6e85813a84b1bd",
+                "5f684acebc7e9ef8"
+            ]
+        ]
+    },
+    {
+        "id": "fb79e656a10d6cf1",
+        "type": "http response",
+        "z": "5f594220603dce1c",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 430,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "4e6e85813a84b1bd",
+        "type": "function",
+        "z": "5f594220603dce1c",
+        "name": "function 3",
+        "func": "// 1. Ανάκτηση δεδομένων από το Webhook του MinIO\nvar payload = msg.payload;\n\n// Έλεγχος ασφαλείας\nif (!payload || !payload.Records || payload.Records.length === 0) {\n    node.warn(\"Μη έγκυρο event από MinIO\");\n    return null;\n}\n\nvar record = payload.Records[0];\nvar s3 = record.s3;\n// Αποκωδικοποίηση του ονόματος αρχείου (π.χ. %20 σε κενό)\nvar objectKey = decodeURIComponent(s3.object.key.replace(/\\+/g, \" \"));\n\n// 2. Δημιουργία του μηνύματος (JSON String)\nmsg.payload = JSON.stringify({\n    event: \"file.uploaded\",\n    bucket: s3.bucket.name,\n    name: objectKey,\n    size: s3.object.size,\n    lastModified: record.eventTime\n});\n\n// 3. Ορισμός του Routing Key\n// Αυτό καθορίζει σε ποια ουρά θα καταλήξει το μήνυμα.\n// Πρέπει να ταιριάζει με το Binding Key της ουράς backend.images.\nmsg.topic = \"file.uploaded\";\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 420,
+        "y": 160,
+        "wires": [
+            [
+                "a0326a308d4a7f3f",
+                "71e7c1af0f3ef55d"
+            ]
+        ]
+    },
+    {
+        "id": "a0326a308d4a7f3f",
+        "type": "amqp-out",
+        "z": "5f594220603dce1c",
+        "name": "backend.images",
+        "broker": "79a0f5d171f10b70",
+        "exchangeName": "pets.events",
+        "exchangeType": "topic",
+        "exchangeRoutingKey": "file.uploaded",
+        "exchangeRoutingKeyType": "str",
+        "exchangeDurable": true,
+        "amqpProperties": "{ \"headers\": {} }",
+        "rpcTimeoutMilliseconds": 3000,
+        "outputs": 0,
+        "x": 680,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "5f684acebc7e9ef8",
+        "type": "debug",
+        "z": "5f594220603dce1c",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 420,
+        "y": 380,
+        "wires": []
+    },
+    {
+        "id": "71e7c1af0f3ef55d",
+        "type": "debug",
+        "z": "5f594220603dce1c",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 620,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "79a0f5d171f10b70",
+        "type": "amqp-broker",
+        "name": "devops-pets-rabbitmq",
+        "host": "rabbitmq",
+        "port": "5672",
+        "vhost": "/",
+        "tls": false,
+        "credsFromSettings": false
+    },
+    {
+        "id": "cc172f2b2303f164",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "@meowwolf/node-red-contrib-amqp": "2.4.2"
+        }
+    }
+]
