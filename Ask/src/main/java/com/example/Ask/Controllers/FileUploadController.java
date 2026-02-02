@@ -43,7 +43,7 @@ public class FileUploadController {
             String imageUrl = fileStorageService.uploadImage(file);
             
             Map<String, String> response = new HashMap<>();
-            response.put("imageUrl", imageUrl);
+            response.put("imageUrl", "/api/files/image/" + imageUrl);
             response.put("message", "File uploaded successfully");
             
             return ResponseEntity.ok(response);
@@ -80,6 +80,10 @@ public class FileUploadController {
             // Upload image to MinIO
             System.out.println("UPLOAD: Attempting to upload file to MinIO...");
             String filename = fileStorageService.uploadImage(file);
+            // Sanitize filename just in case service returns a path
+            if (filename.contains("/")) {
+                filename = filename.substring(filename.lastIndexOf("/") + 1);
+            }
             System.out.println("UPLOAD: File uploaded successfully, filename: " + filename);
 
             // Update animal record with image filename
@@ -90,7 +94,7 @@ public class FileUploadController {
                 System.out.println("UPLOAD: Animal updated with image URL: " + filename);
 
                 Map<String, String> response = new HashMap<>();
-                response.put("imageUrl", filename);
+                response.put("imageUrl", "/api/files/image/" + filename);
                 response.put("message", "Animal image uploaded successfully");
 
                 return ResponseEntity.ok(response);
@@ -109,10 +113,15 @@ public class FileUploadController {
         }
     }
 
-    @GetMapping("/image/{filename}")
+    @GetMapping("/image/{filename:.+}")
     public ResponseEntity<?> getImage(@PathVariable String filename) {
         try {
             System.out.println("GET IMAGE: Requested filename: " + filename);
+            
+            // Sanitize filename to handle cases where full path is passed
+            if (filename.contains("/")) {
+                filename = filename.substring(filename.lastIndexOf("/") + 1);
+            }
             
             // Get object from MinIO
             InputStream stream = minioClient.getObject(

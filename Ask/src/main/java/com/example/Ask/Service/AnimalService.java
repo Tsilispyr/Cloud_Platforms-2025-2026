@@ -54,9 +54,10 @@ public class AnimalService {
     public List<Animal> getAnimalsWithPresignedUrls() {
         List<Animal> animals = AnimalRepo.findAll();
         for (Animal animal : animals) {
-            if (animal.getImageUrl() != null && !animal.getImageUrl().startsWith("http")) {
-                String presignedUrl = fileStorageService.generatePublicUrl(animal.getImageUrl());
-                animal.setImageUrl(presignedUrl);
+            if (animal.getImageUrl() != null && !animal.getImageUrl().startsWith("http") && !animal.getImageUrl().startsWith("/api")) {
+                // Use backend proxy endpoint instead of internal MinIO URL
+                String proxyUrl = "/api/files/image/" + animal.getImageUrl();
+                animal.setImageUrl(proxyUrl);
             }
         }
         return animals;
@@ -67,13 +68,11 @@ public class AnimalService {
      */
     @Transactional
     public Animal getAnimalWithPresignedUrl(Animal animal) {
-        if (animal != null && animal.getImageUrl() != null && !animal.getImageUrl().startsWith("http")) {
-            String presignedUrl = fileStorageService.generatePublicUrl(animal.getImageUrl());
-            animal.setImageUrl(presignedUrl);
+        if (animal != null && animal.getImageUrl() != null && !animal.getImageUrl().startsWith("http") && !animal.getImageUrl().startsWith("/api")) {
+            // Use backend proxy endpoint instead of internal MinIO URL
+            String proxyUrl = "/api/files/image/" + animal.getImageUrl();
+            animal.setImageUrl(proxyUrl);
         }
         return animal;
     }
 }
-
-
-
