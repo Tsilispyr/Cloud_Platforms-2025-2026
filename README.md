@@ -507,7 +507,7 @@ Backend (Scheduled Task) → ThingsBoard API
 
 ### 5.1 Local Development
 ```bash
-docker compose.deploy.yml up --build -d
+docker compose -f docker-compose.deploy.yml up --build -d
 ```
 
 ### 5.2 Kubernetes Production
@@ -549,5 +549,6 @@ kubectl apply -f k8s/
 ## 8. Συμπεράσματα
 
 Το Pet Adoption System είναι ένα ολοκληρωμένο, scalable, και secure σύστημα που επιλύει τα προβλήματα διαχείρισης υιοθεσίας κατοικιδίων. Η microservices architecture επιτρέπει εύκολη κλιμάκωση και συντήρηση, ενώ οι σύγχρονες τεχνολογίες (Vue.js, Spring Boot, Docker, Kubernetes) εξασφαλίζουν performance και reliability.
+
 
 
