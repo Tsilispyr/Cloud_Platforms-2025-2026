@@ -98,7 +98,7 @@
   - ThingsBoard integration
   - Node-RED integration
 
-#### 2.2.7 IoT Platform (ThingsBoard) (Υλοποίηση μόνο λογικής, δεν υολοποιήθηκε σε λειτουργικό επίπεδο)
+#### 2.2.7 IoT Platform (ThingsBoard) (Υλοποίηση μόνο λογικής, δεν υλοποιήθηκε σε λειτουργικό επίπεδο)
 - **Ρόλος**: Οπτικοποίηση και διαχείριση τηλεμετρίας
 - **Port**: 9090
 - **Χαρακτηριστικά**:
@@ -507,7 +507,7 @@ Backend (Scheduled Task) → ThingsBoard API
 
 ### 5.1 Local Development
 ```bash
-docker-compose up -d
+docker compose.deploy.yml up --build -d
 ```
 
 ### 5.2 Kubernetes Production
@@ -549,4 +549,5 @@ kubectl apply -f k8s/
 ## 8. Συμπεράσματα
 
 Το Pet Adoption System είναι ένα ολοκληρωμένο, scalable, και secure σύστημα που επιλύει τα προβλήματα διαχείρισης υιοθεσίας κατοικιδίων. Η microservices architecture επιτρέπει εύκολη κλιμάκωση και συντήρηση, ενώ οι σύγχρονες τεχνολογίες (Vue.js, Spring Boot, Docker, Kubernetes) εξασφαλίζουν performance και reliability.
+
 
