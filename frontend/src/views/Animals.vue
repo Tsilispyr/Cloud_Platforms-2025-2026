@@ -7,8 +7,9 @@
       <li v-for="a in availableAnimals" :key="a.id" class="animal-card">
         <div class="animal-content">
           <div class="animal-image-container">
-            <div v-if="a.imageUrl" class="animal-image">
-              <img :src="getAnimalImageUrl(a.imageUrl)" :alt="a.name" @error="handleImageError" />
+            <div v-if="a.imageUrl && !a.imageLoadError" class="animal-image">
+              <img v-if="a.blobUrl" :src="a.blobUrl" :alt="a.name" />
+              <div v-else style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Φόρτωση...</div>
             </div>
             <div v-else class="animal-image-placeholder">
               <span>Δεν υπάρχει εικόνα</span>
@@ -113,8 +114,33 @@ export default {
         headers: { Authorization: `Bearer ${localStorage.getItem('jwt_token')}` }
       })
         .then(r => r.json())
-        .then(data => (this.animals = data))
+        .then(data => {
+          this.animals = data.map(a => ({ ...a, blobUrl: null, imageLoadError: false }));
+          this.fetchImages();
+        })
         .catch(() => (this.animals = []));
+    },
+    fetchImages() {
+      this.animals.forEach(animal => {
+        if (animal.imageUrl) {
+          // Extract filename to avoid double paths if imageUrl is a full path
+          const filename = animal.imageUrl.split('/').pop();
+          fetch(`http://localhost:8080/api/files/image/${filename}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('jwt_token')}` }
+          })
+            .then(response => {
+              if (response.ok) return response.blob();
+              throw new Error('Network response was not ok');
+            })
+            .then(blob => {
+              animal.blobUrl = URL.createObjectURL(blob);
+            })
+            .catch(err => {
+              console.error(err);
+              animal.imageLoadError = true;
+            });
+        }
+      });
     },
     reload() {
       this.loadAnimals();
@@ -125,18 +151,6 @@ export default {
       const roles = payload.roles ? payload.roles.map(r => r.name ? r.name.toLowerCase() : r.toLowerCase()) : [];
       return roles.includes(role.toLowerCase());
     },
-    getAnimalImageUrl(imageUrl) {
-      if (!imageUrl) return '';
-      return `http://localhost:8080/api/files/image/${imageUrl}`;
-    },
-    handleImageError(event) {
-      // Αν αποτύχει το load της εικόνας, εμφάνισε placeholder
-      event.target.style.display = 'none';
-      const placeholder = event.target.parentElement.querySelector('.animal-image-placeholder');
-      if (placeholder) {
-        placeholder.style.display = 'flex';
-      }
-    }
   }
 }
 </script>

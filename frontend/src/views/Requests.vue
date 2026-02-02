@@ -17,8 +17,9 @@
       <div v-for="r in requests" :key="r.id" class="request-card">
         <div class="request-content">
           <div class="request-image-container">
-            <div v-if="r.imageUrl" class="request-image">
-              <img :src="getRequestImageUrl(r.imageUrl)" :alt="r.name" @error="handleImageError" />
+            <div v-if="r.imageUrl && !r.imageLoadError" class="request-image">
+              <img v-if="r.blobUrl" :src="r.blobUrl" :alt="r.name" />
+              <div v-else style="display:flex;justify-content:center;align-items:center;height:100%;color:#666;">Φόρτωση...</div>
             </div>
             <div v-else class="request-image-placeholder">
               <span>Δεν υπάρχει εικόνα</span>
@@ -71,7 +72,10 @@ export default {
       headers: { Authorization: `Bearer ${localStorage.getItem('jwt_token')}` }
     })
       .then(r => r.json())
-      .then(data => (this.requests = data))
+      .then(data => {
+        this.requests = data.map(r => ({ ...r, blobUrl: null, imageLoadError: false }));
+        this.fetchImages();
+      })
       .catch(() => alert('Σφάλμα ανάκτησης αιτήσεων'))
   },
   methods: {
@@ -128,11 +132,34 @@ export default {
           return r.json();
         })
         .then(data => {
-          this.requests = data;
+          this.requests = data.map(r => ({ ...r, blobUrl: null, imageLoadError: false }));
+          this.fetchImages();
         })
         .catch(() => {
           this.requests = [];
         });
+    },
+    fetchImages() {
+      this.requests.forEach(req => {
+        if (req.imageUrl) {
+          // Extract filename to avoid double paths if imageUrl is a full path
+          const filename = req.imageUrl.split('/').pop();
+          fetch(`http://localhost:8080/api/files/image/${filename}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('jwt_token')}` }
+          })
+            .then(response => {
+              if (response.ok) return response.blob();
+              throw new Error('Network response was not ok');
+            })
+            .then(blob => {
+              req.blobUrl = URL.createObjectURL(blob);
+            })
+            .catch(err => {
+              console.error(err);
+              req.imageLoadError = true;
+            });
+        }
+      });
     },
     hasRole(role) {
       const token = localStorage.getItem('jwt_token');
@@ -140,17 +167,6 @@ export default {
       const roles = payload.roles ? payload.roles.map(r => r.name ? r.name.toLowerCase() : r.toLowerCase()) : [];
       return roles.includes(role.toLowerCase());
     },
-    getRequestImageUrl(imageUrl) {
-      if (!imageUrl) return '';
-      return `http://localhost:8080/api/files/image/${imageUrl}`;
-    },
-    handleImageError(event) {
-      event.target.style.display = 'none';
-      const placeholder = event.target.parentElement.querySelector('.request-image-placeholder');
-      if (placeholder) {
-        placeholder.style.display = 'flex';
-      }
-    }
   }
 }
 </script>
