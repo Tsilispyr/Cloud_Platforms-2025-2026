@@ -10,7 +10,7 @@
 - **Δικτυακή Πρόσβαση**: Για download Docker images
 
 ### 1.2 Ελέγχος Εγκατάστασης
-```bash
+``` 
 # Έλεγχος Docker
 docker --version
 
@@ -28,7 +28,7 @@ docker system df
 Για να λειτουργήσει η αποστολή emails (verification, notifications), ρυθμίστε:
 
 **Linux/Mac:**
-```bash
+``` 
 export GMAIL_USER="your_email@gmail.com"
 export GMAIL_PASS="your_16_digit_app_password"
 ```
@@ -54,7 +54,7 @@ set GMAIL_PASS=your_16_digit_app_password
 
 Για να λειτουργήσει η ενσωμάτωση με ThingsBoard:
 
-```bash
+``` 
 export THINGSBOARD_TOKEN="your_access_token_here"
 ```
 
@@ -68,7 +68,7 @@ export THINGSBOARD_TOKEN="your_access_token_here"
 ## 3. Deployment Steps
 
 ### 3.1 Clone/Download Project
-```bash
+``` 
 # Αν έχετε το project σε git repository
 git clone <repository-url>
 cd Cloud_Platforms-2025-2026-main
@@ -95,7 +95,7 @@ cd /path/to/Cloud_Platforms-2025-2026-main
 - **1025**: MailHog SMTP
 
 **Έλεγχος αν ports είναι σε χρήση:**
-```bash
+``` 
 # Linux/Mac
 netstat -tuln | grep -E ':(5432|8080|8081|8083|9000|9001|5672|15672|1880|9090|8025)'
 
@@ -105,7 +105,7 @@ netstat -ano | findstr "5432 8080 8081 8083 9000 9001 5672 15672 1880 9090 8025"
 
 ### 3.3 Build και Start Services
 
-```bash
+``` 
 # Build και start όλα τα services
 docker-compose -f docker-compose.deploy.yml up -d --build
 
@@ -115,7 +115,7 @@ docker-compose -f docker-compose.deploy.yml up --build
 
 ### 3.4 Έλεγχος Status
 
-```bash
+``` 
 # Έλεγχος status όλων των containers
 docker-compose -f docker-compose.deploy.yml ps
 
@@ -203,11 +203,11 @@ docker-compose -f docker-compose.deploy.yml logs -f
 3. Δημιουργήστε Device (π.χ. "Pet Device")
 4. Αντιγράψτε το Access Token
 5. Ορίστε το ως environment variable:
-   ```bash
+   ``` 
    export THINGSBOARD_TOKEN="your_token_here"
    ```
 6. Επανεκκινήστε το backend:
-   ```bash
+   ``` 
    docker-compose -f docker-compose.deploy.yml restart backend
    ```
 
@@ -215,7 +215,7 @@ docker-compose -f docker-compose.deploy.yml logs -f
 
 Το Backend διαβάζει τις παρακάτω environment variables:
 
-```bash
+``` 
 # Database
 SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/petdb
 SPRING_DATASOURCE_USERNAME=petuser
@@ -251,7 +251,7 @@ SPRING_RABBITMQ_PASSWORD=rabbitmq123
 
 ### 7.1 Health Checks
 
-```bash
+``` 
 # Έλεγχος όλων των services
 docker-compose -f docker-compose.deploy.yml ps
 
@@ -268,7 +268,7 @@ curl http://localhost:8083
 
 ### 7.2 Logs Inspection
 
-```bash
+``` 
 # Backend logs
 docker-compose -f docker-compose.deploy.yml logs backend | tail -50
 
@@ -284,7 +284,7 @@ docker-compose -f docker-compose.deploy.yml logs --tail=100
 
 ### 7.3 Database Connection Test
 
-```bash
+``` 
 # Connect to PostgreSQL (main)
 docker exec -it devops-pets-postgres psql -U petuser -d petdb
 
@@ -297,8 +297,9 @@ docker exec -it devops-pets-postgres-tb psql -U thingsboard -d thingsboard
 # \q   # Exit
 ```
 #### Έλεγχος RabbitMQ queue για message publishment (το ui δεν τα δείχνει πάντα, μάλλον το backend τα επεξεργάζεται γρήγορα και πέφτουν ανάμεσα στα ping του RabbitMQ που έχουν ανά 5 δευτερόλεπτα ανανέωση)
+   ```
    docker exec devops-pets-rabbitmq rabbitmqadmin -u rabbitmq -p rabbitmq123 list queues name message_stats.publish message_stats.deliver_get
-
+```
 ## 8. Troubleshooting
 
 ### 8.1 Backend δεν ξεκινάει
@@ -306,7 +307,7 @@ docker exec -it devops-pets-postgres-tb psql -U thingsboard -d thingsboard
 **Πρόβλημα**: Backend container crash loop
 
 **Λύσεις**:
-```bash
+``` 
 # Έλεγχος logs
 docker-compose -f docker-compose.deploy.yml logs backend
 
@@ -325,7 +326,7 @@ docker-compose -f docker-compose.deploy.yml restart backend
 **Πρόβλημα**: Frontend returns 502 Bad Gateway
 
 **Λύσεις**:
-```bash
+``` 
 # Έλεγχος αν το backend είναι running
 curl http://localhost:8080/api/test
 
@@ -341,7 +342,7 @@ docker-compose -f docker-compose.deploy.yml restart frontend
 **Πρόβλημα**: `Connection refused` ή `Connection timeout`
 
 **Λύσεις**:
-```bash
+``` 
 # Έλεγχος αν το PostgreSQL είναι running
 docker-compose -f docker-compose.deploy.yml ps postgres
 
@@ -357,7 +358,7 @@ docker-compose -f docker-compose.deploy.yml restart postgres
 **Πρόβλημα**: Cannot upload images
 
 **Λύσεις**:
-```bash
+``` 
 # Έλεγχος MinIO status
 curl http://localhost:9000/minio/health/live
 
@@ -373,7 +374,7 @@ docker exec devops-pets-minio mc mb minio/pets-images
 **Πρόβλημα**: Emails δεν φτάνουν
 
 **Λύσεις**:
-```bash
+``` 
 # Έλεγχος MailHog (για development)
 curl http://localhost:8025
 
@@ -390,7 +391,7 @@ docker-compose -f docker-compose.deploy.yml logs backend | grep -i email
 **Πρόβλημα**: ThingsBoard δεν λαμβάνει telemetry
 
 **Λύσεις**:
-```bash
+``` 
 # Έλεγχος ThingsBoard status
 curl http://localhost:9090/api/v1/health
 
@@ -408,7 +409,7 @@ docker-compose -f docker-compose.deploy.yml restart backend
 
 ### 9.1 Stop Services
 
-```bash
+``` 
 # Stop όλα τα services
 docker-compose -f docker-compose.deploy.yml stop
 
@@ -418,7 +419,7 @@ docker-compose -f docker-compose.deploy.yml stop backend
 
 ### 9.2 Start Services
 
-```bash
+``` 
 # Start όλα τα services
 docker-compose -f docker-compose.deploy.yml start
 
@@ -428,7 +429,7 @@ docker-compose -f docker-compose.deploy.yml start backend
 
 ### 9.3 Restart Services
 
-```bash
+``` 
 # Restart όλα τα services
 docker-compose -f docker-compose.deploy.yml restart
 
@@ -438,7 +439,7 @@ docker-compose -f docker-compose.deploy.yml restart backend
 
 ### 9.4 Rebuild Services
 
-```bash
+``` 
 # Rebuild όλα τα services
 docker-compose -f docker-compose.deploy.yml up -d --build
 
@@ -448,7 +449,7 @@ docker-compose -f docker-compose.deploy.yml up -d --build backend
 
 ### 9.5 Remove Services
 
-```bash
+``` 
 # Stop και remove containers (χωρίς volumes)
 docker-compose -f docker-compose.deploy.yml down
 
@@ -458,7 +459,7 @@ docker-compose -f docker-compose.deploy.yml down -v
 
 ### 9.6 Cleanup
 
-```bash
+``` 
 # Remove stopped containers
 docker-compose -f docker-compose.deploy.yml rm
 
@@ -473,7 +474,7 @@ docker volume prune
 
 ### 10.1 Database Backup
 
-```bash
+``` 
 # Backup PostgreSQL (main)
 docker exec devops-pets-postgres pg_dump -U petuser petdb > backup_petdb_$(date +%Y%m%d).sql
 
@@ -483,7 +484,7 @@ docker exec devops-pets-postgres-tb pg_dump -U thingsboard thingsboard > backup_
 
 ### 10.2 Database Restore
 
-```bash
+``` 
 # Restore PostgreSQL (main)
 cat backup_petdb_20240101.sql | docker exec -i devops-pets-postgres psql -U petuser petdb
 
@@ -493,14 +494,14 @@ cat backup_thingsboard_20240101.sql | docker exec -i devops-pets-postgres-tb psq
 
 ### 10.3 MinIO Backup
 
-```bash
+``` 
 # Backup MinIO data
 docker run --rm -v devops-pets_minio-data:/data -v $(pwd):/backup alpine tar czf /backup/minio_backup_$(date +%Y%m%d).tar.gz /data
 ```
 
 ### 10.4 MinIO Restore
 
-```bash
+``` 
 # Restore MinIO data
 docker run --rm -v devops-pets_minio-data:/data -v $(pwd):/backup alpine tar xzf /backup/minio_backup_20240101.tar.gz -C /
 ```
@@ -586,7 +587,7 @@ docker run --rm -v devops-pets_minio-data:/data -v $(pwd):/backup alpine tar xzf
 
 ### 13.1 Common Commands
 
-```bash
+``` 
 # Start all services
 docker-compose -f docker-compose.deploy.yml up -d
 
@@ -637,6 +638,7 @@ docker-compose -f docker-compose.deploy.yml down -v
 -  Environment variable configuration
 
 Ακολουθήστε τα βήματα παραπάνω για successful deployment!
+
 
 
 
