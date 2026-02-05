@@ -1,0 +1,25 @@
+## Load Images
+```
+docker load -i devops_pets_images.tar
+```
+
+## Τρέξτε στο Terminal το παρακάτω για φόρτωση των volumes
+
+```
+VOLUMES=(
+  "devops-pets-frontend-backend-main_db-data"
+  "devops-pets-frontend-backend-main_keycloak_data"
+  "devops-pets-frontend-backend-main_minio-data"
+  "devops-pets-frontend-backend-main_node-red-data"
+  "devops-pets-frontend-backend-main_rabbitmq-data"
+  "devops-pets-frontend-backend-main_tb-data"
+  "devops-pets-frontend-backend-main_tb-logs"
+  "devops-pets-frontend-backend-main_tb-postgres-data"
+)
+
+for VOL in "${VOLUMES[@]}"; do
+    docker volume create "$VOL"
+    docker run --rm -v "$VOL":/volume -v $(pwd):/backup ubuntu \
+    tar xvf /backup/"$VOL".tar -C /volume
+done
+```
