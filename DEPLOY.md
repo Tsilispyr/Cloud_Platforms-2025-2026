@@ -296,6 +296,8 @@ docker exec -it devops-pets-postgres-tb psql -U thingsboard -d thingsboard
 # SELECT * FROM users;
 # \q   # Exit
 ```
+#### Έλεγχος RabbitMQ queue για message publishment (το ui δεν τα δείχνει πάντα, μάλλον το backend τα επεξεργάζεται γρήγορα και πέφτουν ανάμεσα στα ping του RabbitMQ που έχουν ανά 5 δευτερόλεπτα ανανέωση)
+   docker exec devops-pets-rabbitmq rabbitmqadmin -u rabbitmq -p rabbitmq123 list queues name message_stats.publish message_stats.deliver_get
 
 ## 8. Troubleshooting
 
@@ -635,5 +637,6 @@ docker-compose -f docker-compose.deploy.yml down -v
 -  Environment variable configuration
 
 Ακολουθήστε τα βήματα παραπάνω για successful deployment!
+
 
 
