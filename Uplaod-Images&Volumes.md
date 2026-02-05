@@ -25,3 +25,7 @@ for VOL in "${VOLUMES[@]}"; do
     tar xvf /backup/"$VOL".tar -C /volume
 done
 ```
+
+ο φάκελος .zip βρίσκεται στο google Drive λόγω χρόνου upload στο github
+
+https://drive.google.com/file/d/15kOLpSbdM9w6KiQQpff6pS1rU_7sA8aB/view?usp=sharing
