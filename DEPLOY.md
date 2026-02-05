@@ -13,7 +13,7 @@
 ``` 
 # Έλεγχος Docker
 docker --version
-
+ 
 # Έλεγχος Docker Compose
 docker-compose --version
 
@@ -638,6 +638,7 @@ docker-compose -f docker-compose.deploy.yml down -v
 -  Environment variable configuration
 
 Ακολουθήστε τα βήματα παραπάνω για successful deployment!
+
 
 
 
